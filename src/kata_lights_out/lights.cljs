@@ -1,4 +1,12 @@
-(ns kata-lights-out.lights)
+(ns kata-lights-out.lights
+  (:require
+    [reagent.core :as r]
+    [com.stuartsierra.component :as component]))
+
+(defprotocol Lights
+  (all-lights-off? [this])
+  (flip-lights! [this pos])
+  (reset-lights! [this m n]))
 
 (def ^:private light-on 1)
 (def ^:private light-off 0)
@@ -39,11 +47,25 @@
 (defn- all-lights-on [m n]
   (vec (repeat m (vec (repeat n light-on)))))
 
-(defn reset-lights! [lights m n]
-  (reset! lights (all-lights-on m n)))
+(defrecord LightsComponent []
+  component/Lifecycle
 
-(defn flip-lights! [lights pos]
-  (swap! lights (partial flip-neighbors pos)))
+  (start [this]
+    (println ";; Starting lights component")
+    (assoc this :lights (r/atom [])))
 
-(defn all-lights-off? [lights]
-  (every? zero? (flatten lights)))
+  (stop [this]
+    (println ";; Stopping lights component")
+    this)
+
+  Lights
+
+  (reset-lights! [{:keys [lights]} m n]
+    (reset! lights (all-lights-on m n)))
+
+  (flip-lights! [{:keys [lights]} pos] 
+    (swap! lights (partial flip-neighbors pos)))
+
+  (all-lights-off? [{:keys [lights]}]
+    (every? zero? (flatten lights)))
+)
